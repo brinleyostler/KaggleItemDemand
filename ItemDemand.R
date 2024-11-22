@@ -68,7 +68,7 @@ acf4 = storeItem2 %>%
 
 
 #### FEATURE ENGINEERING ####
-arima_recipe1 = recipe(sales~., storeItemTrain1) %>% 
+sales_recipe1 = recipe(sales~., storeItemTrain1) %>% 
   step_date(date, features=c("dow", "month", "doy", "decimal")) %>%                 
   step_mutate(date_decimal=as.numeric(date_decimal)) %>% 
   step_mutate_at(date_dow, fn=factor) %>% 
@@ -78,7 +78,7 @@ arima_recipe1 = recipe(sales~., storeItemTrain1) %>%
   #step_lag(sales, lag=7) %>% 
   step_rm(c(store, item, date_doy))
 
-arima_recipe2 = recipe(sales~., storeItemTrain2) %>% 
+sales_recipe2 = recipe(sales~., storeItemTrain2) %>% 
   step_date(date, features=c("dow", "month", "doy", "decimal")) %>%                 
   step_mutate(date_decimal=as.numeric(date_decimal)) %>% 
   step_mutate_at(date_dow, fn=factor) %>% 
@@ -88,14 +88,18 @@ arima_recipe2 = recipe(sales~., storeItemTrain2) %>%
   #step_lag(sales, lag=7) %>% 
   step_rm(c(store, item, date_doy))
 
-prepped1 = prep(arima_recipe1)
-prepped2 = prep(arima_recipe2)
+prepped1 = prep(sales_recipe1)
+prepped2 = prep(sales_recipe2)
 baked1 = bake(prepped1, new_data=storeItemTrain1)
 baked2 = bake(prepped2, new_data=storeItemTrain2)
 
-#### ARIMA MODEL ####
-arima_model <- arima_reg() %>%
-  set_engine("auto_arima")
+#### PROPHET MODEL ####
+prophet_model1 <- prophet_reg() %>%
+  set_engine(engine = "prophet") %>%
+  fit(sales ~ date, data = training(cv_split1))
+prophet_model2 <- prophet_reg() %>%
+  set_engine(engine = "prophet") %>%
+  fit(sales ~ date, data = training(cv_split2))
 
 
 #### CV ####
@@ -109,20 +113,10 @@ cv_split2 %>%
 
 
 #### WORKFLOW ####
-arima_wf1 <- workflow() %>%
-  add_recipe(arima_recipe1) %>%
-  add_model(arima_model) %>%
-  fit(data=training(cv_split1))
-
-arima_wf2 <- workflow() %>%
-  add_recipe(arima_recipe2) %>%
-  add_model(arima_model) %>%
-  fit(data=training(cv_split2))
-
 # Run the CV
-cv_results1 <- modeltime_calibrate(arima_wf1,
+cv_results1 <- modeltime_calibrate(prophet_model1,
                                   new_data = testing(cv_split1))
-cv_results2 <- modeltime_calibrate(arima_wf2,
+cv_results2 <- modeltime_calibrate(prophet_model2,
                                    new_data = testing(cv_split2))
 
 ## Visualize results
