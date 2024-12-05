@@ -17,4 +17,6 @@ The dataset used in this project is provided by Kaggle and includes the followin
 The dataset spans five years of daily sales data for 50 different items across 10 different stores.
 
 ## Model
+The model with the best results was a LightGBM model. I tuned the parameters on only stores 1-3 and items 1-3, and then applied those tuning parameters to the rest of the dataset. (All tuning can be seen in TuneLGBM.R). 
+
 To view all models that I experimented with for this Kaggle competition, check the git history for the ItemDemand.R file.
